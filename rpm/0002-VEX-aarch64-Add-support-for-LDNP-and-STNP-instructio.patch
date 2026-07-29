@@ -1,0 +1,51 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Slava Monich <slava.monich@jolla.com>
+Date: Wed, 29 Jul 2026 03:31:18 +0300
+Subject: [PATCH] VEX: aarch64: Add support for LDNP and STNP instructions
+
+---
+ VEX/priv/guest_arm64_toIR.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/VEX/priv/guest_arm64_toIR.c b/VEX/priv/guest_arm64_toIR.c
+index a4770b86e..d5b4475a5 100644
+--- a/VEX/priv/guest_arm64_toIR.c
++++ b/VEX/priv/guest_arm64_toIR.c
+@@ -5034,7 +5034,7 @@ Bool dis_ARM64_load_store(/*MB_OUT*/DisResult* dres, UInt insn,
+       }
+    }
+ 
+-   /* -------- LDP,STP (immediate, simm7) (INT REGS) -------- */
++   /* -------- LD(N)P,ST(N)P (immediate, simm7) (INT REGS) -------- */
+    /* L==1 => mm==LD
+       L==0 => mm==ST
+       x==0 => 32 bit transfers, and zero extended loads
+@@ -5052,6 +5052,7 @@ Bool dis_ARM64_load_store(/*MB_OUT*/DisResult* dres, UInt insn,
+    */
+    UInt insn_30_23 = INSN(30,23);
+    if (insn_30_23 == BITS8(0,1,0,1,0,0,0,1) 
++       || insn_30_23 == BITS8(0,1,0,1,0,0,0,0)
+        || insn_30_23 == BITS8(0,1,0,1,0,0,1,1)
+        || insn_30_23 == BITS8(0,1,0,1,0,0,1,0)) {
+       UInt bL     = INSN(22,22);
+@@ -5082,6 +5083,7 @@ Bool dis_ARM64_load_store(/*MB_OUT*/DisResult* dres, UInt insn,
+             case BITS2(1,1):
+                assign(tTA, mkexpr(tEA)); assign(tWA, mkexpr(tEA)); break;
+             case BITS2(1,0):
++            case BITS2(0,0):
+                assign(tTA, mkexpr(tEA)); /* tWA is unused */ break;
+             default:
+                vassert(0); /* NOTREACHED */
+@@ -5137,6 +5139,9 @@ Bool dis_ARM64_load_store(/*MB_OUT*/DisResult* dres, UInt insn,
+ 
+          const HChar* fmt_str = NULL;
+          switch (INSN(24,23)) {
++            case BITS2(0,0):
++               fmt_str = "%snp %s, %s, [%s, #%lld]\n";
++               break;
+             case BITS2(0,1):
+                fmt_str = "%sp %s, %s, [%s], #%lld (at-Rn-then-Rn=EA)\n";
+                break;
+-- 
+2.43.0
+
